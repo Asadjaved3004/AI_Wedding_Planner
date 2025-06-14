@@ -17,14 +17,16 @@ import {
   Divider,
   Box,
   AppBar,
-  Toolbar
+  Toolbar,
+  Button
 } from '@mui/material';
 import { 
   Home, 
   Info, 
   Work, 
   Person,
-  Menu as MenuIcon
+  Menu as MenuIcon,
+  Login as LoginIcon
 } from '@mui/icons-material';
 
 const NavigationTabs = () => {
@@ -39,7 +41,8 @@ const NavigationTabs = () => {
     '/dashboard': 0,
     '/about': 1,
     '/services': 2,
-    '/profile': 3
+    '/profile': 3,
+    '/login': 4 // Added login route
   };
   
   const [value, setValue] = useState(routeToValue[location.pathname] || 0);
@@ -63,9 +66,20 @@ const NavigationTabs = () => {
       case 3:
         navigate('/profile');
         break;
+      case 4:
+        navigate('/login');
+        break;
       default:
         navigate('/dashboard');
     }
+    if (isMobile) {
+      setMobileOpen(false);
+    }
+  };
+
+  const handleSignIn = () => {
+    navigate('/login'); // Changed from '/signin' to '/login' for consistency
+    setValue(4); // Set the active tab value for login
     if (isMobile) {
       setMobileOpen(false);
     }
@@ -87,6 +101,19 @@ const NavigationTabs = () => {
               <MenuIcon />
             </IconButton>
             <Box sx={{ flexGrow: 1 }} />
+            <Button 
+              color="inherit" 
+              startIcon={<LoginIcon />}
+              onClick={handleSignIn}
+              sx={{ 
+                textTransform: 'none',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)'
+                }
+              }}
+            >
+              Sign In
+            </Button>
           </Toolbar>
         </AppBar>
         
@@ -95,13 +122,13 @@ const NavigationTabs = () => {
           open={mobileOpen}
           onClose={handleDrawerToggle}
           ModalProps={{
-            keepMounted: true, // Better open performance on mobile.
+            keepMounted: true,
           }}
           sx={{
             '& .MuiDrawer-paper': { 
               boxSizing: 'border-box',
               width: 240,
-              top: '64px' // To account for the AppBar height
+              top: '64px'
             },
           }}
         >
@@ -149,6 +176,17 @@ const NavigationTabs = () => {
               </ListItemIcon>
               <ListItemText primary="Profile" />
             </ListItem>
+            <Divider />
+            <ListItem 
+              button 
+              selected={value === 4}
+              onClick={handleSignIn}
+            >
+              <ListItemIcon>
+                <LoginIcon color={value === 4 ? 'primary' : 'inherit'} />
+              </ListItemIcon>
+              <ListItemText primary="Sign In" />
+            </ListItem>
           </List>
         </Drawer>
 
@@ -183,46 +221,67 @@ const NavigationTabs = () => {
 
   // For desktop view
   return (
-    <Tabs 
-      value={value} 
-      onChange={(event, newValue) => handleNavigation(newValue)}
-      textColor="inherit"
-      sx={{
-        '& .MuiTabs-indicator': {
-          backgroundColor: theme.palette.primary.main,
-          height: 4
-        },
-        '& .MuiTab-root': {
-          minHeight: 64,
-          padding: '6px 16px'
-        }
-      }}
-    >
-      <Tab 
-        label="Home" 
-        icon={<Home />} 
-        iconPosition="start" 
-        sx={{ textTransform: 'none', fontSize: '0.875rem' }} 
-      />
-      <Tab 
-        label="About" 
-        icon={<Info />} 
-        iconPosition="start" 
-        sx={{ textTransform: 'none', fontSize: '0.875rem' }} 
-      />
-      <Tab 
-        label="Services" 
-        icon={<Work />} 
-        iconPosition="start" 
-        sx={{ textTransform: 'none', fontSize: '0.875rem' }} 
-      />
-      <Tab 
-        label="Profile" 
-        icon={<Person />} 
-        iconPosition="start" 
-        sx={{ textTransform: 'none', fontSize: '0.875rem' }} 
-      />
-    </Tabs>
+    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <Tabs 
+        value={value} 
+        onChange={(event, newValue) => handleNavigation(newValue)}
+        textColor="inherit"
+        sx={{
+          '& .MuiTabs-indicator': {
+            backgroundColor: theme.palette.primary.main,
+            height: 4
+          },
+          '& .MuiTab-root': {
+            minHeight: 64,
+            padding: '6px 16px'
+          }
+        }}
+      >
+        <Tab 
+          label="Home" 
+          icon={<Home />} 
+          iconPosition="start" 
+          sx={{ textTransform: 'none', fontSize: '0.875rem' }} 
+        />
+        <Tab 
+          label="About" 
+          icon={<Info />} 
+          iconPosition="start" 
+          sx={{ textTransform: 'none', fontSize: '0.875rem' }} 
+        />
+        <Tab 
+          label="Services" 
+          icon={<Work />} 
+          iconPosition="start" 
+          sx={{ textTransform: 'none', fontSize: '0.875rem' }} 
+        />
+        <Tab 
+          label="Profile" 
+          icon={<Person />} 
+          iconPosition="start" 
+          sx={{ textTransform: 'none', fontSize: '0.875rem' }} 
+        />
+      </Tabs>
+      <Button
+        variant={value === 4 ? "contained" : "outlined"}
+        startIcon={<LoginIcon />}
+        onClick={handleSignIn}
+        sx={{
+          ml: 2,
+          textTransform: 'none',
+          borderRadius: '20px',
+          color: value === 4 ? '#fff' : theme.palette.primary.main,
+          backgroundColor: value === 4 ? theme.palette.primary.main : 'transparent',
+          borderColor: theme.palette.primary.main,
+          '&:hover': {
+            backgroundColor: value === 4 ? theme.palette.primary.dark : theme.palette.primary.light,
+            borderColor: theme.palette.primary.dark
+          }
+        }}
+      >
+        Sign In
+      </Button>
+    </Box>
   );
 };
 

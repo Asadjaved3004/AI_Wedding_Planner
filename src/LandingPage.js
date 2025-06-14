@@ -135,111 +135,126 @@ const LandingPage = () => {
           </Container>
         </AppBar>
 
-        {/* Hero Slider Section */}
-        <Box sx={{
-          position: 'relative',
-          height: isMobile ? '70vh' : '85vh',
-          overflow: 'hidden',
-          width: '100%',
-          mb: 8
+  {/* Hero Slider Section - Updated Button Container */}
+<Box sx={{ 
+  position: 'relative',
+  height: isMobile ? '70vh' : '85vh',
+  overflow: 'hidden',
+  width: '100%',
+  mb: 8
+}}>
+  {/* Slider Images */}
+  {sliderImages.map((image, index) => (
+    <Box
+      key={index}
+      sx={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundImage: `linear-gradient(rgba(94, 53, 177, 0.3), rgba(216, 27, 96, 0.3)), url(${image})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        opacity: index === currentSlide ? 1 : 0,
+        transition: 'opacity 1s ease-in-out',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}
+    >
+      <Container maxWidth="md">
+        <Box sx={{ 
+          color: 'white',
+          textAlign: 'center',
+          p: isMobile ? 2 : 4,
+          backgroundColor: 'rgba(255,255,255,0.15)',
+          borderRadius: '16px',
+          backdropFilter: 'blur(5px)',
+          mx: 'auto',
+          maxWidth: '800px'
         }}>
-          {/* Slider Images */}
-          {sliderImages.map((image, index) => (
-            <Box
-              key={index}
+          <Typography variant="h1" sx={{ 
+            mb: 3,
+            textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
+          }}>
+            Your Perfect Wedding
+          </Typography>
+          
+          <Typography variant="body1" sx={{ 
+            mb: 4,
+            fontSize: isMobile ? '1.1rem' : '1.25rem',
+            textShadow: '1px 1px 2px rgba(0,0,0,0.3)',
+            px: isMobile ? 0 : 4
+          }}>
+            Let our AI-powered planner create your dream wedding with personalized recommendations
+          </Typography>
+          
+          <Box sx={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 2
+          }}>
+            <Button
+              variant="contained"
+              size={isMobile ? 'medium' : 'large'}
+              endIcon={<ArrowForward />}
+              onClick={() => navigate('/dashboard')}
               sx={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundImage: `linear-gradient(rgba(94, 53, 177, 0.3), rgba(216, 27, 96, 0.3)), url(${image})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                opacity: index === currentSlide ? 1 : 0,
-                transition: 'opacity 1s ease-in-out',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
+                px: isMobile ? 4 : 6,
+                py: isMobile ? 1 : 1.5,
+                background: 'linear-gradient(45deg, #d81b60 30%, #5e35b1 90%)',
+                '&:hover': {
+                  background: 'linear-gradient(45deg, #c2185b 30%, #4a148c 90%)'
+                }
               }}
             >
-              <Container maxWidth="md">
-                <Box sx={{ 
-                  color: 'white',
-                  textAlign: 'center',
-                  p: isMobile ? 2 : 4,
-                  backgroundColor: 'rgba(255,255,255,0.15)',
-                  borderRadius: '16px',
-                  backdropFilter: 'blur(5px)',
-                  mx: 'auto',
-                  maxWidth: '800px'
-                }}>
-                  <Typography variant="h1" sx={{ 
-                    mb: 3,
-                    textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
-                  }}>
-                    Your Perfect Wedding
-                  </Typography>
-                  
-                  <Typography variant="body1" sx={{ 
-                    mb: 4,
-                    fontSize: isMobile ? '1.1rem' : '1.25rem',
-                    textShadow: '1px 1px 2px rgba(0,0,0,0.3)',
-                    px: isMobile ? 0 : 4
-                  }}>
-                    Let our AI-powered planner create your dream wedding with personalized recommendations
-                  </Typography>
-                  
-                  <Button
-                    variant="contained"
-                    size={isMobile ? 'medium' : 'large'}
-                    endIcon={<ArrowForward />}
-                    onClick={() => navigate('/dashboard')}
-                    sx={{
-                      px: isMobile ? 4 : 6,
-                      py: isMobile ? 1 : 1.5,
-                      background: 'linear-gradient(45deg, #d81b60 30%, #5e35b1 90%)',
-                      '&:hover': {
-                        background: 'linear-gradient(45deg, #c2185b 30%, #4a148c 90%)'
-                      }
-                    }}
-                  >
-                    Get Started
-                  </Button>
-                </Box>
-              </Container>
-            </Box>
-          ))}
-          
-          {/* Slider Indicators */}
-          <Box sx={{
-            position: 'absolute',
-            bottom: 40,
-            left: 0,
-            right: 0,
-            display: 'flex',
-            justifyContent: 'center',
-            gap: 1.5
-          }}>
-            {sliderImages.map((_, index) => (
-              <Box
-                key={index}
-                onClick={() => setCurrentSlide(index)}
-                sx={{
-                  width: 14,
-                  height: 14,
-                  borderRadius: '50%',
-                  backgroundColor: index === currentSlide ? '#ffffff' : 'rgba(255,255,255,0.5)',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    backgroundColor: '#ffffff'
-                  }
-                }}
-              />
-            ))}
+              Get Started
+            </Button>
+            <Typography variant="body2" sx={{
+              color: 'rgba(255,255,255,0.8)',
+              fontStyle: 'italic',
+              textShadow: '1px 1px 1px rgba(0,0,0,0.3)'
+            }}>
+              Designed by: Asad Javed
+            </Typography>
           </Box>
         </Box>
+      </Container>
+    </Box>
+  ))}
+  
+  {/* Slider Indicators */}
+  <Box sx={{
+    position: 'absolute',
+    bottom: 40,
+    left: 0,
+    right: 0,
+    display: 'flex',
+    justifyContent: 'center',
+    gap: 1.5
+  }}>
+    {sliderImages.map((_, index) => (
+      <Box
+        key={index}
+        onClick={() => setCurrentSlide(index)}
+        sx={{
+          width: 14,
+          height: 14,
+          borderRadius: '50%',
+          backgroundColor: index === currentSlide ? '#ffffff' : 'rgba(255,255,255,0.5)',
+          cursor: 'pointer',
+          transition: 'all 0.3s ease',
+          '&:hover': {
+            backgroundColor: '#ffffff'
+          }
+        }}
+      />
+    ))}
+  </Box>
+</Box>
 
         {/* Features Section */}
         <Box sx={{ 
