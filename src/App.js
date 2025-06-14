@@ -3,6 +3,8 @@ import LandingPage from './LandingPage'; // Import your new landing page compone
 import Signup from './Signup';
 import Dashboard from './Dashboard';
 import ServiceDetail from './ServiceDetail';
+//import ProtectedRoute from './ProtectedRoute'; // Add this import
+import AdminPanel from './AdminPanel'; // Add this import
 import About from './About';
 import Profile from './Profile';
 import Services from './Services';
@@ -16,6 +18,10 @@ function App() {
       <Routes>
         {/* Landing page as the default route */}
         <Route path="/" element={<LandingPage />} />
+        <Route path="/admin" element={<AdminPanel />} />
+        {/* <Route path="/admin/dashboard" element={<AdminDashboard />} />
+<Route path="/vendor-dashboard" element={<VendorDashboard />} />
+<Route path="/dashboard" element={<UserDashboard />} /> */}
         
         {/* Auth routes */}
         <Route path="/signup" element={<Signup />} />
@@ -32,6 +38,7 @@ function App() {
         
         {/* Optional: Redirect any unknown paths to landing page */}
         <Route path="*" element={<LandingPage />} />
+        <Route path="/admin/AdminPanel" element={<AdminPanel />} />
       </Routes>
     </Router>
   );

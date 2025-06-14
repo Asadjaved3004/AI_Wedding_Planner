@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Typography,
@@ -13,112 +13,122 @@ import {
   Paper,
   CssBaseline,
   CircularProgress,
-  Alert
+  Alert,
+  Tabs,
+  Tab,
+  FormControlLabel,
+  Checkbox
 } from '@mui/material';
 import {
   Visibility,
   VisibilityOff,
   Google,
-  LinkedIn,
+  Facebook,
+  Business,
+  AdminPanelSettings,
+  People,
   Favorite,
   LocalFlorist
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-import axios from 'axios';
 
 const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#d81b60',
-    },
-    secondary: {
-      main: '#5e35b1',
-    },
-    background: {
-      default: '#fff9fb',
-      paper: '#ffffff',
-    },
-  },
-  typography: {
-    fontFamily: [
-      '"Playfair Display"',
-      'serif',
-      '"Great Vibes"',
-      'cursive'
-    ].join(','),
-    h4: {
-      fontFamily: '"Great Vibes", cursive',
-      fontWeight: 400,
-    },
-    h5: {
-      fontFamily: '"Great Vibes", cursive',
-      fontWeight: 400,
-    },
-  },
-  components: {
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: '20px',
-          textTransform: 'none',
-          fontSize: '1rem',
-          boxShadow: 'none',
-          '&:hover': {
-            boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-          },
-        },
-      },
-    },
-    MuiTextField: {
-      styleOverrides: {
-        root: {
-          '& .MuiOutlinedInput-root': {
-            borderRadius: '12px',
-            '& fieldset': {
-              borderColor: '#e0b0ff',
-            },
-            '&:hover fieldset': {
-              borderColor: '#d81b60',
-            },
-          },
-        },
-      },
-    },
-  },
+  // ... (keep your existing theme)
 });
 
 const Login = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
-    password: ''
+    password: '',
+    rememberMe: false,
+    role: 'customer'
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, checked, type } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const handleRoleChange = (event, newValue) => {
+    setFormData(prev => ({
+      ...prev,
+      role: newValue
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
-    // Immediately navigate to dashboard without validation
-    setTimeout(() => {
-      navigate('/dashboard');
+    setError(null);
+
+    // Dummy admin credentials check
+    if (formData.role === 'admin') {
+      if (formData.email === 'admin' && formData.password === 'admin123') {
+        setTimeout(() => {
+          localStorage.setItem('adminToken', 'dummy-admin-token');
+          navigate('/admin/AdminPanel'); // Changed to your AdminPanel route
+          setLoading(false);
+        }, 1000);
+        return;
+      } else {
+        setError('Invalid admin credentials. Use username: admin, password: admin123');
+        setLoading(false);
+        return;
+      }
+    }
+
+    // Normal user login flow
+    if (!formData.email || !formData.password) {
+      setError('Please fill in all fields');
       setLoading(false);
-    }, 500);
+      return;
+    }
+
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      localStorage.setItem('userRole', formData.role);
+      
+      switch(formData.role) {
+        case 'customer':
+          navigate('/dashboard');
+          break;
+        case 'vendor':
+          navigate('/vendor-dashboard');
+          break;
+        default:
+          navigate('/dashboard');
+      }
+    } catch (err) {
+      setError('Login failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSocialLogin = (provider) => {
-    window.location.href = `/api/auth/${provider}`;
-  };
+  // Auto-focus admin credentials when admin tab selected
+  useEffect(() => {
+    if (formData.role === 'admin') {
+      setFormData(prev => ({
+        ...prev,
+        email: 'admin',
+        password: 'admin123'
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        email: '',
+        password: ''
+      }));
+    }
+  }, [formData.role]);
 
   return (
     <ThemeProvider theme={theme}>
@@ -177,20 +187,53 @@ const Login = () => {
 
               <Typography variant="h5" component="h2" gutterBottom sx={{
                 color: '#5e35b1',
-                mb: 4,
+                mb: 2,
                 fontFamily: '"Playfair Display", serif'
               }}>
-                Welcome Back
+                {formData.role === 'customer' && 'Couple Login'}
+                {formData.role === 'vendor' && 'Vendor Portal'}
+                {formData.role === 'admin' && 'Admin Dashboard'}
               </Typography>
+
+              <Tabs
+                value={formData.role}
+                onChange={handleRoleChange}
+                variant="fullWidth"
+                sx={{ mb: 3 }}
+              >
+                <Tab 
+                  icon={<People />} 
+                  label="Couple" 
+                  value="customer" 
+                  sx={{ minHeight: 48 }}
+                />
+                <Tab 
+                  icon={<Business />} 
+                  label="Vendor" 
+                  value="vendor" 
+                  sx={{ minHeight: 48 }}
+                />
+                <Tab 
+                  icon={<AdminPanelSettings />} 
+                  label="Admin" 
+                  value="admin" 
+                  sx={{ minHeight: 48 }}
+                />
+              </Tabs>
+
+              {error && (
+                <Alert severity="error" sx={{ mb: 3 }}>
+                  {error}
+                </Alert>
+              )}
 
               <Box component="form" onSubmit={handleSubmit} noValidate>
                 <Grid container spacing={2}>
                   <Grid item xs={12}>
                     <TextField
                       fullWidth
-                      label="Email"
+                      label={formData.role === 'admin' ? 'Admin Username' : 'Email'}
                       name="email"
-                      type="email"
                       value={formData.email}
                       onChange={handleChange}
                       InputProps={{
@@ -199,6 +242,7 @@ const Login = () => {
                             <Favorite sx={{ color: '#d81b60', fontSize: '1rem' }} />
                           </InputAdornment>
                         ),
+                        readOnly: formData.role === 'admin' // Prevents editing of dummy admin creds
                       }}
                     />
                   </Grid>
@@ -227,10 +271,23 @@ const Login = () => {
                             </IconButton>
                           </InputAdornment>
                         ),
+                        readOnly: formData.role === 'admin' // Prevents editing of dummy admin creds
                       }}
                     />
                   </Grid>
-                  <Grid item xs={12} sx={{ textAlign: 'right' }}>
+                  <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={formData.rememberMe}
+                          onChange={handleChange}
+                          name="rememberMe"
+                          color="primary"
+                        />
+                      }
+                      label="Remember me"
+                      sx={{ color: '#5e35b1' }}
+                    />
                     <Link 
                       href="/forgot-password" 
                       sx={{
@@ -269,62 +326,66 @@ const Login = () => {
                   {loading ? (
                     <CircularProgress size={24} color="inherit" />
                   ) : (
-                    'Continue Planning'
+                    formData.role === 'customer' ? 'Continue Planning' : 
+                    formData.role === 'vendor' ? 'Access Vendor Portal' : 
+                    'Admin Login'
                   )}
                 </Button>
+              </Box>
 
-                <Divider sx={{
-                  my: 3,
-                  '&:before, &:after': {
-                    borderColor: '#e0b0ff',
-                  }
-                }}>
-                  <Typography variant="body2" sx={{ color: '#5e35b1' }}>
-                    Or continue with
-                  </Typography>
-                </Divider>
+              <Divider sx={{
+                my: 3,
+                '&:before, &:after': {
+                  borderColor: '#e0b0ff',
+                }
+              }}>
+                <Typography variant="body2" sx={{ color: '#5e35b1' }}>
+                  Or continue with
+                </Typography>
+              </Divider>
 
-                <Grid container spacing={2} sx={{ mb: 3 }}>
-                  <Grid item xs={12} sm={6}>
-                    <Button
-                      fullWidth
-                      variant="outlined"
-                      startIcon={<Google />}
-                      onClick={() => handleSocialLogin('google')}
-                      sx={{
-                        py: 1.5,
-                        color: '#5e35b1',
-                        borderColor: '#e0b0ff',
-                        '&:hover': {
-                          borderColor: '#5e35b1',
-                          backgroundColor: 'rgba(66, 133, 244, 0.08)'
-                        }
-                      }}
-                    >
-                      Google
-                    </Button>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Button
-                      fullWidth
-                      variant="outlined"
-                      startIcon={<LinkedIn />}
-                      onClick={() => handleSocialLogin('linkedin')}
-                      sx={{
-                        py: 1.5,
-                        color: '#5e35b1',
-                        borderColor: '#e0b0ff',
-                        '&:hover': {
-                          borderColor: '#5e35b1',
-                          backgroundColor: 'rgba(0, 119, 181, 0.08)'
-                        }
-                      }}
-                    >
-                      LinkedIn
-                    </Button>
-                  </Grid>
+              <Grid container spacing={2} sx={{ mb: 3 }}>
+                <Grid item xs={12} sm={6}>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    startIcon={<Google />}
+                    //onClick={() => handleSocialLogin('google')}
+                    sx={{
+                      py: 1.5,
+                      color: '#5e35b1',
+                      borderColor: '#e0b0ff',
+                      '&:hover': {
+                        borderColor: '#5e35b1',
+                        backgroundColor: 'rgba(66, 133, 244, 0.08)'
+                      }
+                    }}
+                  >
+                    Google
+                  </Button>
                 </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    startIcon={<Facebook />}
+                    //onClick={() => handleSocialLogin('facebook')}
+                    sx={{
+                      py: 1.5,
+                      color: '#5e35b1',
+                      borderColor: '#e0b0ff',
+                      '&:hover': {
+                        borderColor: '#5e35b1',
+                        backgroundColor: 'rgba(24, 119, 242, 0.08)'
+                      }
+                    }}
+                  >
+                    Facebook
+                  </Button>
+                </Grid>
+              </Grid>
 
+              {formData.role !== 'admin' && (
                 <Typography variant="body2" sx={{
                   color: '#5e35b1',
                   '& a': {
@@ -336,12 +397,12 @@ const Login = () => {
                     }
                   }
                 }}>
-                  New to our planner?{' '}
-                  <Link href="/signup">
-                    Create account
+                  Don't have an account?{' '}
+                  <Link href={`/signup?role=${formData.role}`}>
+                    Sign up as {formData.role === 'customer' ? 'a couple' : 'a vendor'}
                   </Link>
                 </Typography>
-              </Box>
+              )}
             </Box>
           </Paper>
         </Container>
