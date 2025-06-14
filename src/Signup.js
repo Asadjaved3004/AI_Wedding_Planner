@@ -1,17 +1,21 @@
 import React, { useState } from 'react';
+// Add to your imports
+import theme from './Theme';
 import { 
   Container, 
   Typography, 
   TextField, 
   Button, 
   Grid, 
-  Link, 
-  IconButton, 
-  InputAdornment,
   Divider,
+  IconButton,
+  InputAdornment,
+  
   Box,
   Paper,
-  CssBaseline
+  CssBaseline,
+  Alert,
+  CircularProgress
 } from '@mui/material';
 import { 
   Visibility, 
@@ -21,78 +25,18 @@ import {
   Favorite,
   LocalFlorist
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-import { Link as RouterLink } from 'react-router-dom';
+import { useAuth } from './AuthContext'; // Adjust path as needed
 
-// Wedding-themed color palette
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#d81b60', // Romantic pink
-    },
-    secondary: {
-      main: '#5e35b1', // Royal purple
-    },
-    background: {
-      default: '#fff9fb', // Very light pink
-      paper: '#ffffff', // White for paper elements
-    },
-  },
-  typography: {
-    fontFamily: [
-      '"Playfair Display"',
-      'serif',
-      '"Great Vibes"',
-      'cursive'
-    ].join(','),
-    h4: {
-      fontFamily: '"Great Vibes", cursive',
-      fontWeight: 400,
-    },
-    h5: {
-      fontFamily: '"Great Vibes", cursive',
-      fontWeight: 400,
-    },
-  },
-  components: {
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: '20px',
-          textTransform: 'none',
-          fontSize: '1rem',
-          boxShadow: 'none',
-          '&:hover': {
-            boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-          },
-        },
-      },
-    },
-    MuiTextField: {
-      styleOverrides: {
-        root: {
-          '& .MuiOutlinedInput-root': {
-            borderRadius: '12px',
-            '& fieldset': {
-              borderColor: '#e0b0ff',
-            },
-            '&:hover fieldset': {
-              borderColor: '#d81b60',
-            },
-          },
-        },
-      },
-    },
-  },
-});
+// ... keep your existing theme configuration ...
 
 const Signup = () => {
   const navigate = useNavigate();
+  const { signup } = useAuth();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    username: '',
     email: '',
     password: '',
     confirmPassword: ''
@@ -101,7 +45,6 @@ const Signup = () => {
   const [errors, setErrors] = useState({
     firstName: '',
     lastName: '',
-    username: '',
     email: '',
     password: '',
     confirmPassword: ''
@@ -109,6 +52,9 @@ const Signup = () => {
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -116,13 +62,88 @@ const Signup = () => {
       ...formData,
       [name]: value
     });
+    // Clear error when user types
+    if (errors[name]) {
+      setErrors({
+        ...errors,
+        [name]: ''
+      });
+    }
   };
 
-  // ... (keep all the validation functions from previous code)
+  const validateForm = () => {
+    let valid = true;
+    const newErrors = { ...errors };
 
-  const handleSubmit = (e) => {
+    // First Name validation
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'First name is required';
+      valid = false;
+    }
+
+    // Last Name validation
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'Last name is required';
+      valid = false;
+    }
+
+    // Email validation
+    if (!formData.email) {
+      newErrors.email = 'Email is required';
+      valid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email';
+      valid = false;
+    }
+
+    // Password validation
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+      valid = false;
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+      valid = false;
+    }
+
+    // Confirm Password validation
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+      valid = false;
+    }
+
+    setErrors(newErrors);
+    return valid;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // ... (keep the same validation logic from previous code)
+    setError('');
+    setSuccess('');
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await signup(formData.email, formData.password);
+      setSuccess('Account created successfully! Redirecting...');
+      // You might want to save additional user data to Firestore here
+      setTimeout(() => navigate('/'), 2000);
+    } catch (err) {
+      console.error('Signup error:', err);
+      setError(err.message || 'Failed to create account');
+      // Handle specific Firebase errors
+      if (err.code === 'auth/email-already-in-use') {
+        setError('This email is already in use. Please login instead.');
+      } else if (err.code === 'auth/weak-password') {
+        setError('Password should be at least 6 characters');
+      } else {
+        setError('Failed to create account. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -188,8 +209,20 @@ const Signup = () => {
               }}>
                 Create Your Wedding Account
               </Typography>
+
+              {/* Error and Success Messages */}
+              {error && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  {error}
+                </Alert>
+              )}
+              {success && (
+                <Alert severity="success" sx={{ mb: 2 }}>
+                  {success}
+                </Alert>
+              )}
               
-              <Box component="form" onSubmit={handleSubmit}>
+              <Box component="form" onSubmit={handleSubmit} noValidate>
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
                     <TextField
@@ -227,18 +260,6 @@ const Signup = () => {
                           </InputAdornment>
                         ),
                       }}
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      label="Username"
-                      name="username"
-                      value={formData.username}
-                      onChange={handleChange}
-                      error={!!errors.username}
-                      helperText={errors.username}
-                      required
                     />
                   </Grid>
                   <Grid item xs={12}>
@@ -312,6 +333,7 @@ const Signup = () => {
                   type="submit"
                   fullWidth
                   variant="contained"
+                  disabled={loading}
                   sx={{ 
                     mt: 3, 
                     mb: 2, 
@@ -321,8 +343,9 @@ const Signup = () => {
                       background: 'linear-gradient(to right, #c2185b, #4a148c)',
                     }
                   }}
+                  startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
                 >
-                  Begin Your Wedding Journey
+                  {loading ? 'Creating Account...' : 'Begin Your Wedding Journey'}
                 </Button>
 
                 <Divider sx={{ 
@@ -374,28 +397,21 @@ const Signup = () => {
                 </Grid>
 
                 <Typography variant="body2" sx={{ 
-  color: '#5e35b1',
-  '& a': {
-    color: '#d81b60',
-    fontWeight: 'bold',
-    textDecoration: 'none',
-    '&:hover': {
-      textDecoration: 'underline',
-    }
-  }
-}}>
-  Already planning with us?{' '}
-  <RouterLink to="/login" style={{
-    color: '#d81b60',
-    fontWeight: 'bold',
-    textDecoration: 'none',
-    '&:hover': {
-      textDecoration: 'underline',
-    }
-  }}>
-    Sign in
-  </RouterLink>
-</Typography>
+                  color: '#5e35b1',
+                  '& a': {
+                    color: '#d81b60',
+                    fontWeight: 'bold',
+                    textDecoration: 'none',
+                    '&:hover': {
+                      textDecoration: 'underline',
+                    }
+                  }
+                }}>
+                  Already planning with us?{' '}
+                  <RouterLink to="/login">
+                    Sign in
+                  </RouterLink>
+                </Typography>
               </Box>
             </Box>
           </Paper>

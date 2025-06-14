@@ -32,6 +32,9 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { useAuth } from './AuthContext'; // Adjust path as needed
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, FacebookAuthProvider } from 'firebase/auth';
+import { auth } from './firebase'; // Adjust path to your firebase config
 
 const theme = createTheme({
   // ... (keep your existing theme)
@@ -39,6 +42,7 @@ const theme = createTheme({
 
 const Login = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -48,6 +52,10 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [socialLoading, setSocialLoading] = useState({
+    google: false,
+    facebook: false
+  });
 
   const handleChange = (e) => {
     const { name, value, checked, type } = e.target;
@@ -69,12 +77,12 @@ const Login = () => {
     setLoading(true);
     setError(null);
 
-    // Dummy admin credentials check
+    // Dummy admin credentials check (keep your existing admin flow)
     if (formData.role === 'admin') {
       if (formData.email === 'admin' && formData.password === 'admin123') {
         setTimeout(() => {
           localStorage.setItem('adminToken', 'dummy-admin-token');
-          navigate('/admin/AdminPanel'); // Changed to your AdminPanel route
+          navigate('/admin/AdminPanel');
           setLoading(false);
         }, 1000);
         return;
@@ -85,17 +93,18 @@ const Login = () => {
       }
     }
 
-    // Normal user login flow
-    if (!formData.email || !formData.password) {
-      setError('Please fill in all fields');
-      setLoading(false);
-      return;
-    }
-
+    // Firebase authentication for normal users
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      localStorage.setItem('userRole', formData.role);
+      await login(formData.email, formData.password);
       
+      // Store rememberMe preference
+      if (formData.rememberMe) {
+        localStorage.setItem('rememberMe', 'true');
+      } else {
+        localStorage.removeItem('rememberMe');
+      }
+
+      // Navigate based on role
       switch(formData.role) {
         case 'customer':
           navigate('/dashboard');
@@ -107,9 +116,49 @@ const Login = () => {
           navigate('/dashboard');
       }
     } catch (err) {
-      setError('Login failed. Please check your credentials.');
+      console.error('Login error:', err);
+      // Handle specific Firebase errors
+      if (err.code === 'auth/invalid-credential') {
+        setError('Invalid email or password');
+      } else if (err.code === 'auth/too-many-requests') {
+        setError('Account temporarily disabled due to too many failed attempts');
+      } else {
+        setError('Login failed. Please check your credentials.');
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSocialLogin = async (providerType) => {
+    try {
+      setSocialLoading(prev => ({ ...prev, [providerType]: true }));
+      setError(null);
+
+      let provider;
+      if (providerType === 'google') {
+        provider = new GoogleAuthProvider();
+      } else if (providerType === 'facebook') {
+        provider = new FacebookAuthProvider();
+      }
+
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      // Determine if user is a vendor (you might need a better way to determine this)
+      const isVendor = user.email?.endsWith('@vendordomain.com'); // Example check
+
+      // Navigate based on user type
+      if (isVendor) {
+        navigate('/vendor-dashboard');
+      } else {
+        navigate('/dashboard');
+      }
+    } catch (err) {
+      console.error('Social login error:', err);
+      setError(err.message || 'Social login failed');
+    } finally {
+      setSocialLoading(prev => ({ ...prev, [providerType]: false }));
     }
   };
 
@@ -126,6 +175,15 @@ const Login = () => {
         ...prev,
         email: '',
         password: ''
+      }));
+    }
+
+    // Check for rememberMe preference
+    const rememberMe = localStorage.getItem('rememberMe') === 'true';
+    if (rememberMe) {
+      setFormData(prev => ({
+        ...prev,
+        rememberMe: true
       }));
     }
   }, [formData.role]);
@@ -242,7 +300,7 @@ const Login = () => {
                             <Favorite sx={{ color: '#d81b60', fontSize: '1rem' }} />
                           </InputAdornment>
                         ),
-                        readOnly: formData.role === 'admin' // Prevents editing of dummy admin creds
+                        readOnly: formData.role === 'admin'
                       }}
                     />
                   </Grid>
@@ -271,7 +329,7 @@ const Login = () => {
                             </IconButton>
                           </InputAdornment>
                         ),
-                        readOnly: formData.role === 'admin' // Prevents editing of dummy admin creds
+                        readOnly: formData.role === 'admin'
                       }}
                     />
                   </Grid>
@@ -333,57 +391,71 @@ const Login = () => {
                 </Button>
               </Box>
 
-              <Divider sx={{
-                my: 3,
-                '&:before, &:after': {
-                  borderColor: '#e0b0ff',
-                }
-              }}>
-                <Typography variant="body2" sx={{ color: '#5e35b1' }}>
-                  Or continue with
-                </Typography>
-              </Divider>
+              {formData.role !== 'admin' && (
+                <>
+                  <Divider sx={{
+                    my: 3,
+                    '&:before, &:after': {
+                      borderColor: '#e0b0ff',
+                    }
+                  }}>
+                    <Typography variant="body2" sx={{ color: '#5e35b1' }}>
+                      Or continue with
+                    </Typography>
+                  </Divider>
 
-              <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={12} sm={6}>
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    startIcon={<Google />}
-                    //onClick={() => handleSocialLogin('google')}
-                    sx={{
-                      py: 1.5,
-                      color: '#5e35b1',
-                      borderColor: '#e0b0ff',
-                      '&:hover': {
-                        borderColor: '#5e35b1',
-                        backgroundColor: 'rgba(66, 133, 244, 0.08)'
-                      }
-                    }}
-                  >
-                    Google
-                  </Button>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    startIcon={<Facebook />}
-                    //onClick={() => handleSocialLogin('facebook')}
-                    sx={{
-                      py: 1.5,
-                      color: '#5e35b1',
-                      borderColor: '#e0b0ff',
-                      '&:hover': {
-                        borderColor: '#5e35b1',
-                        backgroundColor: 'rgba(24, 119, 242, 0.08)'
-                      }
-                    }}
-                  >
-                    Facebook
-                  </Button>
-                </Grid>
-              </Grid>
+                  <Grid container spacing={2} sx={{ mb: 3 }}>
+                    <Grid item xs={12} sm={6}>
+                      <Button
+                        fullWidth
+                        variant="outlined"
+                        startIcon={<Google />}
+                        onClick={() => handleSocialLogin('google')}
+                        disabled={socialLoading.google}
+                        sx={{
+                          py: 1.5,
+                          color: '#5e35b1',
+                          borderColor: '#e0b0ff',
+                          '&:hover': {
+                            borderColor: '#5e35b1',
+                            backgroundColor: 'rgba(66, 133, 244, 0.08)'
+                          }
+                        }}
+                      >
+                        {socialLoading.google ? (
+                          <CircularProgress size={24} />
+                        ) : (
+                          'Google'
+                        )}
+                      </Button>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Button
+                        fullWidth
+                        variant="outlined"
+                        startIcon={<Facebook />}
+                        onClick={() => handleSocialLogin('facebook')}
+                        disabled={socialLoading.facebook}
+                        sx={{
+                          py: 1.5,
+                          color: '#5e35b1',
+                          borderColor: '#e0b0ff',
+                          '&:hover': {
+                            borderColor: '#5e35b1',
+                            backgroundColor: 'rgba(24, 119, 242, 0.08)'
+                          }
+                        }}
+                      >
+                        {socialLoading.facebook ? (
+                          <CircularProgress size={24} />
+                        ) : (
+                          'Facebook'
+                        )}
+                      </Button>
+                    </Grid>
+                  </Grid>
+                </>
+              )}
 
               {formData.role !== 'admin' && (
                 <Typography variant="body2" sx={{

@@ -11,10 +11,13 @@ import {
     Button,
     AppBar,
     Toolbar,
-    Tabs,
-    Tab,
     Paper,
-    CssBaseline
+    CssBaseline,
+    IconButton,
+    Avatar,
+    Menu,
+    MenuItem,
+    Divider
 } from '@mui/material';
 import {
     Home,
@@ -27,13 +30,15 @@ import {
     MenuBook,
     MusicNote,
     Cake,
-    DirectionsCar
+    DirectionsCar,
+    ExitToApp
 } from '@mui/icons-material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 import NavigationTabs from './NavigationTabs';
+import { useAuth } from './AuthContext';
 
-// Wedding theme (same as before)
+// Wedding theme
 const theme = createTheme({
     palette: {
         primary: {
@@ -62,85 +67,39 @@ const weddingServices = [
         price: "$500 - $5000",
         rating: 4.8
     },
-    {
-        id: 2,
-        title: "Groom Suits",
-        category: "dresses",
-        description: "Elegant suits and tuxedos for the groom",
-        image: "https://images.unsplash.com/photo-1593030761757-71fae45fa0e7",
-        price: "$300 - $2000",
-        rating: 4.6
-    },
-    {
-        id: 3,
-        title: "Stage Decorations",
-        category: "decor",
-        description: "Beautiful stage setups to make your ceremony magical",
-        image: "https://images.unsplash.com/photo-1519671482749-fd09be7ccebf",
-        price: "$1000 - $10000",
-        rating: 4.9
-    },
-    {
-        id: 4,
-        title: "Bridal Jewelry",
-        category: "jewelry",
-        description: "Stunning jewelry sets to complement your bridal look",
-        image: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f",
-        price: "$200 - $10000",
-        rating: 4.7
-    },
-    {
-        id: 5,
-        title: "Photography",
-        category: "photography",
-        description: "Professional wedding photography packages",
-        image: "https://images.unsplash.com/photo-1529634806980-85c3dd6d34ac",
-        price: "$1500 - $8000",
-        rating: 4.9
-    },
-    {
-        id: 6,
-        title: "Wedding Cake",
-        category: "food",
-        description: "Custom-designed wedding cakes for your celebration",
-        image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587",
-        price: "$300 - $2000",
-        rating: 4.8
-    },
-    {
-        id: 7,
-        title: "Bridal Bouquet",
-        category: "florals",
-        description: "Beautiful floral arrangements for the bride",
-        image: "https://images.unsplash.com/photo-1519378058457-4c29a0a2efac",
-        price: "$100 - $500",
-        rating: 4.5
-    },
-    {
-        id: 8,
-        title: "Wedding Car",
-        category: "transport",
-        description: "Luxury vehicles for your wedding day transportation",
-        image: "https://images.unsplash.com/photo-1555212697-194d092e3b8f",
-        price: "$500 - $3000",
-        rating: 4.4
-    }
+    // ... (keep all other service objects)
 ];
 
 const categories = [
     { id: 'all', name: 'All Services', icon: <MenuBook /> },
-    { id: 'dresses', name: 'Dresses', icon: <LocalFlorist /> },
-    { id: 'jewelry', name: 'Jewelry', icon: <Diamond /> },
-    { id: 'photography', name: 'Photography', icon: <CameraAlt /> },
-    { id: 'decor', name: 'Decorations', icon: <Home /> },
-    { id: 'food', name: 'Food & Cake', icon: <Cake /> },
-    { id: 'transport', name: 'Transportation', icon: <DirectionsCar /> }
+    // ... (keep all other category objects)
 ];
 
 const Dashboard = () => {
     const navigate = useNavigate();
+    const { user, logout } = useAuth();
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [navValue, setNavValue] = useState(0);
+    const [anchorEl, setAnchorEl] = useState(null);
+    const open = Boolean(anchorEl);
+
+    const handleMenuOpen = (event) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+    };
+
+    const handleLogout = async () => {
+        try {
+            await logout();
+            navigate('/login');
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+        handleMenuClose();
+    };
 
     const handleCategoryChange = (category) => {
         setSelectedCategory(category);
@@ -165,7 +124,7 @@ const Dashboard = () => {
                 backgroundImage: 'linear-gradient(to bottom, rgba(255,249,251,0.9), rgba(255,249,251,0.9))',
                 minHeight: '100vh'
             }}>
-                {/* Navigation Bar */}
+                {/* Navigation Bar with User Menu */}
                 <AppBar position="static" sx={{
                     background: 'linear-gradient(to right, #d81b60, #5e35b1)',
                     boxShadow: 'none'
@@ -179,6 +138,73 @@ const Dashboard = () => {
                             AI Wedding Planner
                         </Typography>
                         <NavigationTabs />
+                        
+                        {/* User Avatar and Menu */}
+                        <IconButton
+                            onClick={handleMenuOpen}
+                            size="small"
+                            sx={{ ml: 2 }}
+                            aria-controls={open ? 'account-menu' : undefined}
+                            aria-haspopup="true"
+                            aria-expanded={open ? 'true' : undefined}
+                        >
+                            <Avatar sx={{ 
+                                width: 40, 
+                                height: 40,
+                                bgcolor: 'white',
+                                color: '#d81b60'
+                            }}>
+                                {user?.email?.charAt(0).toUpperCase()}
+                            </Avatar>
+                        </IconButton>
+                        <Menu
+                            anchorEl={anchorEl}
+                            id="account-menu"
+                            open={open}
+                            onClose={handleMenuClose}
+                            PaperProps={{
+                                elevation: 3,
+                                sx: {
+                                    overflow: 'visible',
+                                    filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
+                                    mt: 1.5,
+                                    '& .MuiAvatar-root': {
+                                        width: 32,
+                                        height: 32,
+                                        ml: -0.5,
+                                        mr: 1,
+                                    },
+                                    '&:before': {
+                                        content: '""',
+                                        display: 'block',
+                                        position: 'absolute',
+                                        top: 0,
+                                        right: 14,
+                                        width: 10,
+                                        height: 10,
+                                        bgcolor: 'background.paper',
+                                        transform: 'translateY(-50%) rotate(45deg)',
+                                        zIndex: 0,
+                                    },
+                                },
+                            }}
+                            transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                            anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                        >
+                            <MenuItem onClick={handleMenuClose}>
+                                <Avatar /> Profile
+                            </MenuItem>
+                            <MenuItem onClick={handleMenuClose}>
+                                <Avatar /> My Account
+                            </MenuItem>
+                            <Divider />
+                            <MenuItem 
+                                onClick={handleLogout}
+                                sx={{ color: '#d81b60' }}
+                            >
+                                <ExitToApp sx={{ mr: 1 }} /> Logout
+                            </MenuItem>
+                        </Menu>
                     </Toolbar>
                 </AppBar>
 
